@@ -1,26 +1,33 @@
-// 🔴 PASTE YOUR OPENROUTER API KEY HERE (LOCAL ONLY)
-const API_KEY = "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";
+const express = require("express");
+const cors = require("cors");
 
-async function callAPI(message) {
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// 👉 PASTE YOUR API KEY HERE
+const OPENAI_API_KEY = "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";
+
+app.post("/chat", async (req, res) => {
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const userMessage = req.body.message;
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost",
-        "X-Title": "PathFinder"
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model: "gpt-3.5-turbo",
         messages: [
           {
             role: "system",
-            content: "You are a helpful career advisor for Indian students."
+            content: "You are a helpful AI career advisor for students in India."
           },
           {
             role: "user",
-            content: message
+            content: userMessage
           }
         ]
       })
@@ -28,29 +35,13 @@ async function callAPI(message) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      return "Error: " + (data.error?.message || "API failed");
-    }
+    res.json({
+      reply: data.choices[0].message.content
+    });
 
-    return data.choices?.[0]?.message?.content || "No response";
-
-  } catch (error) {
-    return "Error: " + error.message;
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-}
+});
 
-async function send() {
-  const input = document.getElementById("input").value;
-  const output = document.getElementById("output");
-
-  if (!input.trim()) {
-    output.innerText = "Please enter something.";
-    return;
-  }
-
-  output.innerText = "Loading...";
-
-  const result = await callAPI(input);
-
-  output.innerText = result;
-}
+app.listen(3000, () => console.log("Server running on http://localhost:3000"));
